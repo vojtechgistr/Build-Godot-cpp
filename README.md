@@ -1,5 +1,5 @@
 # Build-Godot-cpp
-This program creates the entire cpp framework for godot.
+This program creates the entire cpp workspace for godot (C++).
 
 ### Command Usage / Variation:
 ```
