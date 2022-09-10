@@ -4,9 +4,11 @@ Param(
   [string]$gd_files
 )
 
-Write-Output $name
-Write-Output $script_files
-Write-Output $gd_files
+if ($name.Contains("--disable-")) {
+
+    $script_files = $name
+    $name = "gdnative_cpp_project"
+}
 
 if (Test-Path -Path ".\$name\") {
     
@@ -18,11 +20,14 @@ if (Test-Path -Path ".\$name\") {
 
     Write-Output "[0%] Downloading venv module...`n-----------------------------------------"
 
-    if (($gd_files -ne "--disable-gd-files" -and $script_files -ne "--disable-gd-files" -and $name -ne "--disable-gd-files") -And -Not (Test-Path -Path ".\venv\Scripts\")) {
+    if (($gd_files -ne "--disable-gd-files" -and $script_files -ne "--disable-gd-files") -And -Not (Test-Path -Path ".\venv\Scripts\")) {
         python -m venv venv
     }
+
+    if ($gd_files -ne "--disable-gd-files" -and $script_files -ne "--disable-gd-files") {
         .\venv\Scripts\Activate.ps1
         pip install scons
+    }
 
 
     Write-Output "-----------------------------------------`n[17%] Creating '$name' folder...`n-----------------------------------------"
@@ -31,7 +36,8 @@ if (Test-Path -Path ".\$name\") {
     cd .\$name\
 
 
-    if($gd_files -ne "--disable-gd-files" -and $script_files -ne "--disable-gd-files" -and $name -ne "--disable-gd-files") {
+    if($gd_files -ne "--disable-gd-files" -and $script_files -ne "--disable-gd-files") {
+        
         Write-Output "-----------------------------------------`n[21%] Adding submodules...`n-----------------------------------------"
         git init
         git submodule add -b 3.x https://github.com/godotengine/godot-cpp
@@ -40,6 +46,7 @@ if (Test-Path -Path ".\$name\") {
 
         
         Write-Output "-----------------------------------------`n[29%] Building modules...`n-----------------------------------------"
+
         
         scons platform=windows generate_bindings=yes -j4
         cd ..
@@ -54,7 +61,7 @@ if (Test-Path -Path ".\$name\") {
 
     }
 
-    if ($script_files -ne "--disable-script-files" -and $gd_files -ne "--disable-script-files" -and $name -ne "--disable-script-files") {
+    if ($script_files -ne "--disable-script-files" -and $gd_files -ne "--disable-script-files") {
 
         # Original code obtained from https://github.com/PowerShell/PowerShell/issues/2736
 
@@ -243,3 +250,5 @@ Help(opts.GenerateHelpText(env))"
     Write-Host "-----------------------------------------`n[100%] Done: creation completed...`n-----------------------------------------"
 
 }
+
+exit
