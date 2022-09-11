@@ -139,7 +139,7 @@ opts.Add(EnumVariable('platform', `"Compilation platform`", '', ['', 'windows', 
 opts.Add(EnumVariable('p', `"Compilation target, alias for 'platform'`", '', ['', 'windows', 'x11', 'linux', 'osx']))
 opts.Add(BoolVariable('use_llvm', `"Use the LLVM / Clang compiler`", 'no'))
 opts.Add(PathVariable('target_path', 'The path where the lib is installed.', 'project/bin/'))
-opts.Add(PathVariable('target_name', 'The library name.', 'libgdexample', PathVariable.PathAccept))
+opts.Add(PathVariable('target_name', 'The library name.', 'libexample', PathVariable.PathAccept))
 
 # Local dependency paths, adapt them to your setup
 godot_headers_path = `"godot-cpp/godot-headers/`"
@@ -236,14 +236,242 @@ Default(library)
 Help(opts.GenerateHelpText(env))"
 
     New-Item -Path '.\SConstruct' -ItemType File
-    Set-Content -Path '.\SConstruct' -Value $SConstruct 
+    Set-Content -Path '.\SConstruct' -Value $SConstruct
+
+    if ($script_files -ne "--disable-gd-files" -and $gd_files -ne "--disable-gd-files") {
+
+    Write-Output "-----------------------------------------`n[97%] Generating project files...`n-----------------------------------------"
+
+    #generate project files
+    cd .\project\
 
 
-        # open vscode
-        code .
-        # open godot
-        godot -e
+    # create bin & import folder with .gdignore file
+    mkdir bin
+    mkdir .\.import\
+    New-Item -Path '.\.import\.gdignore' -ItemType File
+
+    
+    # create default env
+    New-Item -Path '.\default_env.tres' -ItemType File
+
+    $default_env = "[gd_resource type=`"Environment`" load_steps=2 format=2]
+
+[sub_resource type=`"ProceduralSky`" id=1]
+
+[resource]
+background_mode = 2
+background_sky = SubResource( 1 )"
+
+    Set-Content -Path '.\default_env.tres' -Value $default_env
+
+
+    # create project.godot
+    New-Item -Path '.\project.godot' -ItemType File
+
+    $project_godot = "; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=4
+
+[application]
+
+config/name=`"$name`"
+run/main_scene=`"res://main.tscn`"
+
+[gui]
+
+common/drop_mouse_on_gui_input_disabled=true
+
+[physics]
+
+common/enable_pause_aware_picking=true
+
+[rendering]
+
+environment/default_environment=`"res://default_env.tres`""
+
+    Set-Content -Path '.\project.godot' -Value $project_godot
+
+
+    # create main scene
+    New-Item -Path '.\main.tscn' -ItemType File
+
+    $main_tscn = "[gd_scene format=2]
+
+[node name=`"Main`" type=`"Node2D`"]"
+
+    Set-Content -Path '.\main.tscn' -Value $main_tscn
+
+    Write-Output "-----------------------------------------`n[99%] Generating example .cpp files...`n-----------------------------------------"
+
+    # create example.h
+    New-Item -Path '..\src\example.h' -ItemType File
+
+    $exampleh = "#ifndef GDEXAMPLE_H
+#define GDEXAMPLE_H
+
+#include <Godot.hpp>
+#include <Sprite.hpp>
+
+namespace godot
+{
+
+    //   class name : inheritance
+    class GDExample : public Sprite
+    {
+        GODOT_CLASS(GDExample, Sprite)
+
+    private:
+        float time_passed;
+        godot::Godot *gd;
+
+    public:
+        static void _register_methods();
+
+        GDExample();
+        ~GDExample();
+
+        void _init(); // our initializer called by Godot
+
+        void _ready();
+
+        void _process(float delta);
+
+    protected:
+    };
+
+}
+
+#endif"
+
+    Set-Content -Path '..\src\example.h' -Value $exampleh
+
+
+    # create example.cpp
+    New-Item -Path '..\src\example.cpp' -ItemType File
+    $examplecpp = "#include `"example.h`"
+
+using namespace godot;
+
+void GDExample::_register_methods()
+{
+    // Register functions
+    register_method(`"_process`", &GDExample::_process);
+    register_method(`"_ready`", &GDExample::_ready);
+}
+
+GDExample::GDExample()
+{
+}
+
+GDExample::~GDExample()
+{
+    // add your cleanup here
+}
+
+void GDExample::_init()
+{
+    // initialize any variables here
+    time_passed = 0.0;
+}
+
+// Call when script is ready
+void GDExample::_ready()
+{
+    // add your code here
+}
+
+// Every frame
+void GDExample::_process(float delta)
+{
+    time_passed += delta;
+
+    Vector2 new_position = Vector2(10.0 + (10.0 * sin(time_passed * 2.0)), 10.0 + (10.0 * cos(time_passed * 1.5)));
+
+    set_position(new_position);
+}
+"
+
+    Set-Content -Path '..\src\example.cpp' -Value $examplecpp
+
+
+    # create gdlibrary.cpp
+    New-Item -Path '..\src\gdlibrary.cpp'
+    $gdlibrarycpp = "#include `"example.h`"
+
+extern `"C`" void GDN_EXPORT godot_gdnative_init(godot_gdnative_init_options *o)
+{
+    godot::Godot::gdnative_init(o);
+}
+
+extern `"C`" void GDN_EXPORT godot_gdnative_terminate(godot_gdnative_terminate_options *o)
+{
+    godot::Godot::gdnative_terminate(o);
+}
+
+extern `"C`" void GDN_EXPORT godot_nativescript_init(void *handle)
+{
+    godot::Godot::nativescript_init(handle);
+
+    // Register C++ classes to godot library
+    godot::register_class<godot::GDExample>();
+    // godot::register_class<godot::SomeNewClassName>();
+}"
+    Set-Content -Path '..\src\gdlibrary.cpp' -Value $gdlibrarycpp
+
+    
+    # create example library
+    New-Item -Path '.\bin\example.gdnlib' -ItemType File
+    $examplegdnlib = "[general]
+
+singleton=false
+load_once=true
+symbol_prefix=`"godot_`"
+reloadable=false
+
+[entry]
+
+X11.64=`"res://bin/x11/libexample.so`"
+Windows.64=`"res://bin/win64/libexample.dll`"
+OSX.64=`"res://bin/osx/libexample.dylib`"
+
+[dependencies]
+
+X11.64=[]
+Windows.64=[]
+OSX.64=[]"
+    Set-Content -Path '.\bin\example.gdnlib' -Value $examplegdnlib
+
+
+    New-Item -Path '.\bin\example.gdns' -ItemType File
+    $examplegdns = "[gd_resource type=`"NativeScript`" load_steps=2 format=2]
+
+[ext_resource path=`"res://bin/example.gdnlib`" type=`"GDNativeLibrary`" id=1]
+
+[resource]
+
+resource_name = `"example`"
+class_name = `"GDExample`"
+library = ExtResource( 1 )"
+    Set-Content -Path '.\bin\example.gdns' -Value $examplegdns
+    
     }
+
+    cd ..
+
+    # open vscode
+    code .
+
+    # open godot
+    # gdb godot
+    # run -e --path .\project\
+}
 
 
     cd ..
