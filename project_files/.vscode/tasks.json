@@ -1,0 +1,17 @@
+{
+  "version":  "2.0.0",
+  "tasks":  [
+    {
+      "label":  "Build C++ Project Files",
+      "problemMatcher":  [
+        
+      ],
+      "command":  ".\\build.ps1",
+      "type":  "shell",
+      "group":  {
+        "kind":  "build",
+        "isDefault":  true
+      }
+    }
+  ]
+}
