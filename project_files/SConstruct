@@ -4,8 +4,8 @@ import os
 opts = Variables([], ARGUMENTS)
 
 # Define the relative path to the Godot headers.
-godot_headers_path = "godot-cpp/godot-headers"
-godot_bindings_path = "godot-cpp"
+godot_headers_path = "lib/godot-cpp/godot-headers"
+godot_bindings_path = "lib/godot-cpp"
 
 # Gets the standard flags CC, CCX, etc.
 env = DefaultEnvironment()
@@ -86,12 +86,13 @@ env.Append(
         godot_bindings_path + "/include",
         godot_bindings_path + "/include/gen/",
         godot_bindings_path + "/include/core/",
+        "include",
     ]
 )
 
 env.Append(
     LIBS=[
-        env.File(os.path.join("godot-cpp/bin", "libgodot-cpp.%s.%s.64%s" % (platform, env["target"], env["LIBSUFFIX"])))
+        env.File(os.path.join("lib/godot-cpp/bin", "libgodot-cpp.%s.%s.64%s" % (platform, env["target"], env["LIBSUFFIX"])))
     ]
 )
 
