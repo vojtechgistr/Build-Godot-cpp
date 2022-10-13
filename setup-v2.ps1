@@ -39,6 +39,9 @@ if (Test-Path -Path ".\$name\") {
     if($gd_files -ne "--disable-gd-files" -and $script_files -ne "--disable-gd-files") {
         
         Write-Output "-----------------------------------------`n[21%] Adding submodules...`n-----------------------------------------"
+        mkdir lib
+        cd lib
+
         git init
         git submodule add -b 3.x https://github.com/godotengine/godot-cpp
         cd godot-cpp
@@ -49,7 +52,7 @@ if (Test-Path -Path ".\$name\") {
 
         
         scons platform=windows generate_bindings=yes -j4
-        cd ..
+        cd ../..
         godot --gdnative-generate-json-api api.json
 
         deactivate
@@ -58,6 +61,7 @@ if (Test-Path -Path ".\$name\") {
 
         mkdir src
         mkdir project
+        mkdir include
 
     }
 
@@ -93,9 +97,9 @@ if (Test-Path -Path ".\$name\") {
         mkdir .\Assets\Levels\Prefabs
         mkdir .\Assets\Levels\Scenes
         mkdir .\Assets\Levels\UI
-        mkdir .\Assets\Scripts\Characters
-        mkdir .\Assets\Scripts\Characters\Player
-        mkdir .\Assets\Scripts\Objects
+        mkdir .\Scripts\Characters
+        mkdir .\Scripts\Characters\Player
+        mkdir .\Scripts\Objects
 
         # create import folder with .gdignore file
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DaRealAdalbertBro/Build-Godot-cpp/main/project_files/project/.import/.gdignore" -OutFile ".\.import\.gdignore"
@@ -112,7 +116,7 @@ if (Test-Path -Path ".\$name\") {
         Write-Output "-----------------------------------------`n[99%] Generating example .cpp files...`n-----------------------------------------"
 
         # create example.h
-        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DaRealAdalbertBro/Build-Godot-cpp/main/project_files/src/example.h" -OutFile "..\src\example.h"
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DaRealAdalbertBro/Build-Godot-cpp/main/project_files/include/example.h" -OutFile "..\include\example.h"
 
         # create example.cpp
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DaRealAdalbertBro/Build-Godot-cpp/main/project_files/src/example.cpp" -OutFile "..\src\example.cpp"
@@ -124,7 +128,7 @@ if (Test-Path -Path ".\$name\") {
         Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DaRealAdalbertBro/Build-Godot-cpp/main/project_files/project/bin/lib.gdnlib" -OutFile ".\bin\lib.gdnlib"
 
         # create example library script
-        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DaRealAdalbertBro/Build-Godot-cpp/main/project_files/project/Assets/Scripts/Objects/example.gdns" -OutFile ".\Assets\Scripts\Objects\example.gdns"
+        Invoke-WebRequest -Uri "https://raw.githubusercontent.com/DaRealAdalbertBro/Build-Godot-cpp/main/project_files/project/Assets/Scripts/Objects/example.gdns" -OutFile ".\Scripts\Objects\example.gdns"
 
         ((Get-Content -path ".\project.godot" -Raw) -replace "gdnative_cpp_project", $name) | Set-Content -Path ".\project.godot"
     }
